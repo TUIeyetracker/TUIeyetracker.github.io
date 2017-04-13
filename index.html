@@ -1,0 +1,291 @@
+<!doctype html>
+<html class="no-js" lang="">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Eye track</title>
+    <meta name="description" content="Track eyes">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <!-- Place favicon.ico in the root directory -->
+
+        <!-- <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="js/vendor/modernizr-2.8.3.min.js"></script> -->
+        <style>
+            body{
+                font-family: Helvetica, sans-serif;
+                font-weight: lighter;
+            }
+            #heatmap-toggle{
+                position: absolute;
+                top: 0;
+                left: 0;
+                background-color: rgba(200, 0, 0, .5);
+                z-index: 100;
+            }
+            #start-button{
+                position:absolute;
+                top:60%;
+                left:50%;
+                transform: translate(-50%, -50%);
+                background-color: rgb(0,150,50);
+                padding: 10px;
+                border-radius: 5px;
+                color: white;
+                text-decoration: none;
+                font-size: 25px;
+                visibility: hidden;
+            }
+
+            #start-text{
+                position:absolute;
+                top:50%;
+                left:50%;
+                transform: translate(-50%, -50%);
+                padding: 10px;
+                color: black;
+                text-decoration: none;
+                font-size: 21px;
+                text-align: center;
+                visibility: hidden;
+            }       
+
+            }
+            #start-button:hover{
+                background-color: rgb(0,100,0);
+            }
+
+            #calibrate-button{
+                position:absolute;
+                top:60%;
+                left:50%;
+                transform: translate(-50%, -50%);
+                background-color: rgb(0,150,50);
+                padding: 10px;
+                border-radius: 5px;
+                color: white;
+                text-decoration: none;
+                font-size: 25px;
+            }
+
+            #calibrate-button:hover{
+                background-color: rgb(0,100,0);
+            }
+            #next-button{
+                position:absolute;
+                top:90%;
+                left:85%;
+                transform: translate(-50%, -50%);
+                background-color: rgb(0,150,50);
+                padding: 10px;
+                border-radius: 5px;
+                color: white;
+                text-decoration: none;
+                font-size: 25px;
+                visibility: hidden;
+            }   
+            #next-button:hover{
+                background-color: rgb(0,100,0);
+            }                 
+
+            #heatmap-container{
+                height: 1000px; 
+            }
+            .content-container{
+                width: 100%; 
+                z-index: 2;
+                display: block;
+                max-width: 1000px;
+                margin: auto;
+                visibility: hidden;
+            }
+
+        </style>
+    </head>
+    <body>
+        <!--<div class="splash" style="">
+            <a href="#start" id="calibrate-button">Start webcam and calibrate</a>
+            <a href="#start" id="start-button">Go to slide</a>
+        </div>-->
+        <a href="#start" id="calibrate-button" style="z-index: 1">Start webcam and calibrate</a>
+        <a href="#start" id="start-button" style="z-index: 1">Ready? Take a look at the slide!</a>
+        <p id="start-text"> Check the green outline in the top right so that you are positioned correctly. <br> Please look at each box and click the box with your mouse to callibrate the eye-tracking algorithm. </p>
+		<img id="pointimg" style= "background-size: 100% 100%;" src="points.jpg"/>
+        <div class="splashend" style="">
+        </div>
+        <div id="container-wrapper">
+            <div id="heatmap-container">
+                <div class="content-container">
+                    <div style="display: inline-block; width: 100%">
+                        <div style="float: center; width: 100%;">
+                        	<h1> Example company Q1 </h1>
+                            <img style="width: 100%" src="slide_example.jpg"/>
+                        </div>
+                        
+                    </div>
+ 
+                </div>
+            </div>
+            <a href="#next" id="next-button">Done (Show heatmap)</a>
+        </div>
+
+        <script src="https://code.jquery.com/jquery-1.12.2.min.js"></script>
+        <!--<script>window.jQuery || document.write('<script src="js/vendor/jquery-1.12.2.min.js"><\/script>')</script> -->
+        <script src="webgazer.js"></script>
+        <script src="heatmap.min.js"></script>
+        <!-- <script src="https://h5p.org/sites/all/modules/h5p/library/js/h5p-resizer.js" charset="UTF-8"></script> -->
+
+        <script>
+            function reflowHeatmap(){
+                if(window.heatmapDisplay){
+                    var rawMapData = window.data;
+                    var mapData = rawMapData
+                    .filter(function(obj){
+                        return (obj.data !== null);
+                    })
+                    .map(function(obj){
+                        var cleanNode = {x: obj.data.x, y: obj.data.y, value: 1};
+                        return cleanNode;
+                    });
+                    heatmap.setData({
+                        max:    1,
+                        data:   mapData
+                    });
+                    setTimeout(reflowHeatmap, 250)
+                }
+            }
+
+            window.heatmapDisplay = false;
+            window.data = [];
+            var heatmapContainer = document.getElementById('heatmap-container');
+            window.heatmap = h337.create({
+                container: heatmapContainer
+            });
+
+            window.onload = function() {    
+
+				var calibrateButton = document.getElementById("calibrate-button");
+                var startButton = document.getElementById("start-button");
+                var nextButton = document.getElementById("next-button");
+                var page = document.getElementById("container-wrapper");
+
+                var width = 320;
+                var height = 240;
+                var topDist = '0px';
+                var leftDist = '0px';
+
+                webgazer.params.imgWidth = width;
+                webgazer.params.imgHeight = height;
+
+
+                calibrateButton.addEventListener("click", function(e){
+                    e.preventDefault();
+                    webgazer.setRegression('ridge')
+                    .setTracker('clmtrackr') 
+                    .setGazeListener(function(data, clock) {
+	                    window.data.push({data});
+	                 }) 
+	                .begin()  
+                    .showPredictionPoints(true);
+					document.getElementById('start-button').style = "visibility: visible";
+					document.getElementById('start-text').style = "visibility: visible";
+					document.getElementById('calibrate-button').style = "display: none";
+                    page.style = "";
+                }); 
+
+                startButton.addEventListener("click", function(e){
+                    e.preventDefault();
+                    window.data = [];
+                    webgazer.showPredictionPoints(false)
+                    document.getElementById('start-button').style = "display: none";
+                    document.getElementById('pointimg').style = "display: none";
+                    document.getElementsByClassName('content-container')[0].style = "visibility: visible";
+                    document.getElementById('next-button').style = "visibility: visible";
+                    page.style = "";
+                });
+
+                nextButton.addEventListener("click", function(e){
+                    e.preventDefault();
+                    webgazer.end();
+                    //document.getElementsByClassName("splashend")[0].style = "position: absolute; z-index: 100; left: 0; top: 0; height: 100%; width: 100%; background-color: white;"; 
+                    //document.getElementsByClassName("content-container")[0].style = "display: none";
+                    page.style = "";
+                    window.heatmapDisplay = true;
+                    setTimeout(
+                        reflowHeatmap,
+                        100);
+                    window.localStorage.clear();
+                    document.getElementById('next-button').style = "display: none";
+                    document.getElementById('overlay').style = "display: none";
+                });
+
+                /* var heatmapToggle = document.getElementById('heatmap-toggle');
+                heatmapToggle.addEventListener('click', function(e){
+                    e.preventDefault();
+                    window.heatmapDisplay = !heatmapDisplay;
+                    if(window.heatmapDisplay){
+                        setTimeout(
+                        reflowHeatmap,
+                        100);
+                    }
+                    
+                    if(!window.heatmapDisplay){
+                        window.heatmap.setData({
+                            data: []
+                        });
+                        heatmapContainer.style = "";
+                        document.getElementsByClassName('heatmap-canvas')[0].remove();
+                    }
+                    
+
+                }); */
+
+                var setup = function() {
+                	var video = document.getElementById('webgazerVideoFeed');
+			        video.style.display = 'block';
+			        video.style.position = 'absolute';
+			        video.style.top = topDist;
+			        video.style.left = leftDist;
+			        video.width = width;
+			        video.height = height;
+			        video.style.margin = '0px';
+
+                    var overlay = document.createElement('canvas');
+			        overlay.id = 'overlay';
+			        overlay.style.position = 'absolute';
+			        overlay.width = width;
+			        overlay.height = height;
+			        overlay.style.top = topDist;
+			        overlay.style.left = leftDist;
+			        overlay.style.margin = '0px';
+			        document.body.appendChild(overlay);
+
+                    var cl = webgazer.getTracker().clm;
+
+                    function drawLoop() {
+			            requestAnimFrame(drawLoop);
+			            overlay.getContext('2d').clearRect(0,0,width,height);
+			            if (cl.getCurrentPosition()) {
+			                cl.draw(overlay);
+			            }
+			        }
+			        drawLoop();
+                    //window.localStorage.setItem('data', JSON.stringify([]));
+                };
+
+                function checkIfReady() {
+                    if (webgazer.isReady()) {
+                        setup();
+                    } else {
+                        setTimeout(checkIfReady, 100);
+                    }
+                }
+                setTimeout(checkIfReady,100);
+            };
+
+    </script>
+
+</body>
+</html>
